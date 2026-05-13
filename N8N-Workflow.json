@@ -1,0 +1,844 @@
+{
+  "name": "ABM AskMax",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -864,
+        224
+      ],
+      "id": "a83d31bf-8bbf-4be6-bf66-d7cd2ca46ad8",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -320,
+        -240
+      ],
+      "id": "0a97b0a8-0dc7-4a6f-942a-a2a99d518956",
+      "name": "OpenAI Chat Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "qptoleCYTIfnqjza",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "name": "ABM",
+        "description": "Call this tool to Execute ABM for leads. the input should be their linkedin URL in the following format: \n\n{\n\"linkedinURL\": \"[URL-HERE]\"\n}",
+        "workflowId": {
+          "__rl": true,
+          "value": "Ujvh83qP9i7Cttcb",
+          "mode": "list",
+          "cachedResultName": "My workflow 5"
+        },
+        "workflowInputs": {
+          "mappingMode": "defineBelow",
+          "value": {},
+          "matchingColumns": [],
+          "schema": [],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.toolWorkflow",
+      "typeVersion": 2,
+      "position": [
+        96,
+        -240
+      ],
+      "id": "ce29c7dc-a42d-4e80-bd7a-e2db2c74251c",
+      "name": "ABM"
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.body.message }}",
+        "options": {
+          "systemMessage": "={\n  \"instructions\": \"You are ANM Automation. When a user provides a LinkedIn URL, always call the ABM tool in JSON format. Never output plain text or explanations when calling a tool.\",\n  \"rules\": {\n    \"hi\": \"If user says HI, respond: 'Hi, I'm ABM Automation, I can handle all your lead, gather data, research lead and make campaigns with sequence it in lemlist..<3'\",\n    \"no_url\": \"Answer user query in a friendly and respectful way.\",\n    \"tool_error\": \"If tool does not return anything or error, respond: 'Sorry, Person's Gmail not available.'\",\n    \"workflow_success\": \"After the tool returns 'Workflow executed Successfully.', respond: 'Done!! I have Executed the workflow and added lead to lemlist. Let me know if you need anything else! Thank You.!! <3'\"\n  },\n  \"example_output\": {\n    \"query\": \"url here\"\n  }\n}\n"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 1.7,
+      "position": [
+        -112,
+        -544
+      ],
+      "id": "8152072c-3b2d-4105-9fea-8d0618939c28",
+      "name": "ABM BRAIN",
+      "onError": "continueErrorOutput"
+    },
+    {
+      "parameters": {
+        "sessionIdType": "customKey",
+        "sessionKey": "={{ $('Webhook').item.json.body.message }}",
+        "contextWindowLength": 10
+      },
+      "type": "@n8n/n8n-nodes-langchain.memoryBufferWindow",
+      "typeVersion": 1.3,
+      "position": [
+        -80,
+        -240
+      ],
+      "id": "c8c9175b-51c1-4c64-80d3-ccbc11c78969",
+      "name": "Simple Memory",
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "b5dd94a4-f6b6-423e-99a4-96c8e8bb63ff",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 2.1,
+      "position": [
+        -448,
+        -544
+      ],
+      "id": "66e2f66c-10f8-44ad-9663-f657dfb21a48",
+      "name": "Webhook",
+      "webhookId": "b5dd94a4-f6b6-423e-99a4-96c8e8bb63ff"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"content\": \"{{ $json.output }}\"\n} ",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.4,
+      "position": [
+        288,
+        -560
+      ],
+      "id": "b005dd36-759c-46ad-8ce1-0255c0c92e55",
+      "name": "Respond to Webhook"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.apollo.io/v1/people/match",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            },
+            {
+              "name": "Cache-Control",
+              "value": "no-cache"
+            },
+            {
+              "name": "x-api-key",
+              "value": "nPPBZ9S3Uq5BC5HVo0yo8A"
+            }
+          ]
+        },
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"linkedin_url\": \"{{ $json.query }}\",\n  \"reveal_personal_emails\": true,\n  \"reveal_current_work_email\": true,\n  \"reveal_personal_emails\": false\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        -672,
+        224
+      ],
+      "id": "06bc623b-c65e-4234-b174-aaddeba62a2c",
+      "name": "HTTP Request5"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://api.lemlist.com/api/campaigns",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "lemlistApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"name\": \", {{ $('HTTP Request5').item.json.person.first_name }},{{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }} -Outreach Campaign\",\n  \"campaignType\": \"manual\" \n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        832,
+        224
+      ],
+      "id": "5488215f-8a61-407a-ba07-f80077df5b0c",
+      "name": "HTTP Request14",
+      "credentials": {
+        "lemlistApi": {
+          "id": "OyHatKlhdBij4eb9",
+          "name": "Lemlist account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "lead",
+        "campaignId": "={{ $('HTTP Request14').item.json._id }}",
+        "email": "={{ $('HTTP Request5').item.json.person.email }}",
+        "additionalFields": {
+          "companyName": "={{ $('Append or update row in sheet2').item.json['COMPANY NAME'] }}",
+          "firstName": "={{ $('Append or update row in sheet2').item.json.NAME }}",
+          "jobTitle": "={{ $('Append or update row in sheet2').item.json.DESIGNATION }}",
+          "lastName": "={{ $('Append or update row in sheet2').item.json.NAME }}",
+          "linkedinUrl": "={{ $('Append or update row in sheet2').item.json['LINKED IN URL'] }}"
+        }
+      },
+      "type": "n8n-nodes-base.lemlist",
+      "typeVersion": 2,
+      "position": [
+        1600,
+        224
+      ],
+      "id": "8434434c-2e78-49d3-a262-b9ef295733c4",
+      "name": "Create a lead2",
+      "credentials": {
+        "lemlistApi": {
+          "id": "OyHatKlhdBij4eb9",
+          "name": "Lemlist account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Role:\nYou are an expert B2B SaaS and D2C email copywriter. \n\nTask:\nWrite highly personalized cold outreach emails that create urgency and FOMO for decision-makers (Marketing Managers, CMOs, E-commerce Heads, Founders).\nOnly use HTML Tags to bold, line shift and other things.\n\nResearch resourcs:\n{{ $json.message.content }}\n\nClients List:\nSmartphones – Vivo\nJuicer Mixer Grinders & Smart Locks – Atomberg\nLaptops/Gaming PC – Lenovo \nKitchen Appliances | Water Purifier  | Mixer Grinder – Borosil , Atomberg, Hafaele, Native by Urban Company\nSmart Locks & Home Solutions – Hafele, Native Urban Company\nSmart Cooking Appliances – Upliance.ai\n\nRules:\n- Use the Research resource.\n- Important Don't use any '**', else symbols for bold, Always use Html tags.\n- Always Use HTML tags for line breaks, bold and pointers.\n- Always bold (HTML Tags) stats, numeric values, client names, company name, pointers, hook and other you think its relivant.\n- Don't make it feel like a paragraph make its fomo, interesting show our stats like make it engaging and personalized.\n- Use stats pointer in email body\n- Always make Unique content for email and use pointers and stats.\n- Follow this exact structure:\n\n1. Personalized Hook (1 liner):\n   - Mention only first name {{ $('HTTP Request5').item.json.person.first_name }}, or something unique about their brand.\n   - Hook should be a like a question or a line that attract reader (Like wanted to convert website visiters into customers ?, don't use this same line always make unique some thing like this)\n   - Show you’ve noticed their strength but also hint at a common pain point.\n   - Make hook short, crisp, 1-2 liner, conavying interest.\n\n2. Problem Statement (1-2 lines):\n   - Connect the problem statement with the the challenge mentioned in the personalized hook and make the problem statement outcome based catering to maxicus use cases.\n   - Highlight the challenge most similar companies face (e.g., converting visitors, abandoned carts, scaling customer experience).\n   - Make it feel relatable, not generic.\n\n3. Solution + Social Proof (3-4 pointers):\n   - Present the solution (our Live Video Commerce solution).\n   - Drop brand names of our clients and mention Our clients like (Related to the industry type and all top clients 3-4 clients, Use resources of our clients mentioned above).\n   - Use strong outcome metrics (e.g., +40% conversions, +20% AOV).\n   - Each pointer should be short 1 liner.\n\n4. FOMO Angle (1-2 lines):\n   - Create urgency: “Competitors are already adopting this,” “Early adopters are seeing X growth,” “Don’t miss out while the market is shifting.”\n   - Frame it like an opportunity window that’s closing.\n\n5. Call to Action (1 line):\n   - Ask for a short 15-min call/demo this week.\n   - Keep it low-commitment but time-sensitive.\n\n6. Signature:\n   - Add sender details (e.g., Thanks & Regards, Ayesha).\n\nTone Guidelines:\n- Keep it short (under 100 words).\n- Conversational, confident, and direct.\n- Avoid jargon, focus on ROI and missed opportunity if they don’t act.\n- Always use {{ $('HTTP Request5').item.json.person.first_name }},  {{ $('HTTP Request5').item.json.person.contact.organization_name }}for personalization.\n\nOutput format:\n{\n    \"type\": \"email\",\n    \"delay\": 0,\n    \"subject\": \"hook subject\",\n    \"message\": \"xyz body content\"\n}\n\n\n",
+              "role": "assistant"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        96,
+        448
+      ],
+      "id": "e0eda943-4217-4b93-bc5a-b0ea365a6de0",
+      "name": "Email Draft2",
+      "credentials": {
+        "openAiApi": {
+          "id": "qptoleCYTIfnqjza",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Role:\nAct as a Professional Marketing research agent.\n\nTask:\nYour task is to take the research of of person and company match them with Maxicus Solution and ofering and catogarize the lead on the basis of it.\nYou don't have to write mail or linked in message just categorize the person in the below details.\nLook at the example for full detail.\n\nResources(Research of Person+Company):\n{{ $json.message.content }}\n{{ $('Person Research2').item.json.message.content }}\n\nFormat and Maxicus Solution:\nCompare on the basis Maxicus client and provide in which catogery it falls\nSmartphones – Vivo\nJuicer Mixer Grinders & Smart Locks – Atomberg\nLaptops/Gaming PC – Lenovo \nKitchen Appliances | Water Purifier  | Mixer Grinder – Borosil , Atomberg, Hafaele, Native by Urban Company\nSmart Locks & Home Solutions – Hafele, Native Urban Company\nSmart Cooking Appliances – Upliance.ai\nPerson's profile Decision makers:\nMarketing Heads\nEcommerce Heads\nCX Leaders\nD2C heads\nOnline Business Heads\n\nSolutions:\nWe only have 2 offerings:  \n1. Sales Video Commerce (Phygital) → for people in sales, marketing, business growth, or manager roles looking to increase sales.  \n2. Support Video Commerce → for people in customer experience, support, or product service roles looking to improve customer experience. \n\nOutput format:\n- Short summary about company\n- Company's Ratings + Major challange in reviews\n- Opportunities for Growth of company\n- Final Categorization: \n- Person's Category: Like Decision Maker - Sales and Marketing Head  \n- Relevant Solution: like if person falls under sales related department then video commerce for sales (Phygital) or customer sucesss related then video commerce for support (Phygital)\n- Company Products: Like company's products are Laptops/Gaming PC or kitchen applinces, Kitchen Appliances, Water Purifier, Mixer Grinder, Smart Locks & Home Solutions, Smart Cooking Appliances, Smartphones, etc.\n- Company allignment with existing clients: like if company products are smartphones that allign with existing client vivo.so like this use info above",
+              "role": "assistant"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        80,
+        224
+      ],
+      "id": "692d69ec-bd96-485e-9dac-5f9458751fff",
+      "name": "Maxicus Solutions2",
+      "credentials": {
+        "openAiApi": {
+          "id": "qptoleCYTIfnqjza",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Act as a Professional Marketing Research Agent.\n\nTask:\n\nYour task is to Research about the company by using deep research, use web research and get all the information about company, its products, type of company, cost of products, company revenue and growth, reviews, pain points, etc.\n\nCompany: \n{{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }}\n{{ $('HTTP Request5').item.json.person.organization.short_description }}\n{{ $('HTTP Request5').item.json.person.organization.linkedin_url }}\n\nOutput Format:\nA summary about person's comapny includes about company, about, pain points, products, industry, target audience, etc.\nKey words like help in sales, support, etc.\nSome unique facts about Company.\nOutput in simple text format.",
+              "role": "assistant"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        48,
+        0
+      ],
+      "id": "5fb1b3b0-ba53-4ead-9961-2cb9dd41625d",
+      "name": "Company Research2",
+      "credentials": {
+        "openAiApi": {
+          "id": "qptoleCYTIfnqjza",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Act as a Professional Marketing Research Agent.\n\nTask:\n\nYour task is to take Linked In data of a person and then research all about the  person, experience, department, company, field of interest, etc.\n\nLinked Data:\n{{ $('HTTP Request5').item.json.person }}\n{{ $('HTTP Request5').item.json.person.organization.keywords }}\n\nOutput Format:\nA summary about person includes about preson, designation, department, company, etc.\nKey words like[Marketing, sales, customer experience, etc].\nSome unique facts about Person.\nOutput in simple text format."
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -272,
+        224
+      ],
+      "id": "bc5103bc-6e70-4aae-a39d-af7bf52e4c5e",
+      "name": "Person Research2",
+      "credentials": {
+        "openAiApi": {
+          "id": "qptoleCYTIfnqjza",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.lemlist.com/api/sequences/{{ $json.sequenceId }}/steps",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "lemlistApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Email Draft2').item.json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1024,
+        224
+      ],
+      "id": "4db32fe5-1af0-49c7-acb5-5d6c62fa0dd4",
+      "name": "HTTP Request15",
+      "credentials": {
+        "lemlistApi": {
+          "id": "OyHatKlhdBij4eb9",
+          "name": "Lemlist account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "53050079-f4f6-4e50-b778-d885a6125638",
+              "name": "success",
+              "value": "\"Workflow executed Successfully.\"",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1776,
+        224
+      ],
+      "id": "ae9341bf-1dab-4dea-b686-a87524730a3d",
+      "name": "Edit Fields2"
+    },
+    {
+      "parameters": {
+        "operation": "appendOrUpdate",
+        "documentId": {
+          "__rl": true,
+          "value": "135saaBuEgGVwtAFyL8RuGFefDG-UFU5wV93xfmKrSm8",
+          "mode": "list",
+          "cachedResultName": "Lead Database",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/135saaBuEgGVwtAFyL8RuGFefDG-UFU5wV93xfmKrSm8/edit?usp=drivesdk"
+        },
+        "sheetName": {
+          "__rl": true,
+          "value": "gid=0",
+          "mode": "list",
+          "cachedResultName": "Sheet1",
+          "cachedResultUrl": "https://docs.google.com/spreadsheets/d/135saaBuEgGVwtAFyL8RuGFefDG-UFU5wV93xfmKrSm8/edit#gid=0"
+        },
+        "columns": {
+          "mappingMode": "defineBelow",
+          "value": {
+            "NAME": "={{ $json.person.name }}",
+            "COMPANY NAME": "={{ $json.person.employment_history[1].organization_name }}",
+            "DESIGNATION": "={{ $json.person.employment_history[1].title }}",
+            "LINKED IN URL": "={{ $json.person.linkedin_url }}",
+            "EMAIL": "={{ $json.person.email }}"
+          },
+          "matchingColumns": [
+            "NAME"
+          ],
+          "schema": [
+            {
+              "id": "NAME",
+              "displayName": "NAME",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true,
+              "removed": false
+            },
+            {
+              "id": "COMPANY NAME",
+              "displayName": "COMPANY NAME",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "DESIGNATION",
+              "displayName": "DESIGNATION",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "LINKED IN URL",
+              "displayName": "LINKED IN URL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            },
+            {
+              "id": "EMAIL",
+              "displayName": "EMAIL",
+              "required": false,
+              "defaultMatch": false,
+              "display": true,
+              "type": "string",
+              "canBeUsedToMatch": true
+            }
+          ],
+          "attemptToConvertTypes": false,
+          "convertFieldsToString": false
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.googleSheets",
+      "typeVersion": 4.7,
+      "position": [
+        -480,
+        224
+      ],
+      "id": "2b6d57a4-ebd3-44ec-accb-f797a4ef5729",
+      "name": "Append or update row in sheet2",
+      "credentials": {
+        "googleSheetsOAuth2Api": {
+          "id": "7PSlxza5tYVMQQM5",
+          "name": "Google Sheets account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Role:\nYou are an expert B2B SaaS and D2C email copywriter. \n\nTask:\nYour task is to write a Follow-Up Outreach Email 1 for decision-makers such as Marketing Managers, CMOs, E-commerce Heads, or Founders from the mail email resource.\nOnly use HTML Tags to bold, line shift and other things.\n\nMain Email:\n{{ $json.message.content }}\n\nResearch resourcs:\n{{ $('Maxicus Solutions2').item.json.message.content }}\n{{ $('Company Research2').item.json.message.content }}\n{{ $('Person Research2').item.json.message.content }}\n\nClients List:\nSmartphones – Vivo\nJuicer Mixer Grinders & Smart Locks – Atomberg\nLaptops/Gaming PC – Lenovo \nKitchen Appliances | Water Purifier  | Mixer Grinder – Borosil , Atomberg, Hafaele, Native by Urban Company\nSmart Locks & Home Solutions – Hafele, Native Urban Company\nSmart Cooking Appliances – Upliance.ai\n\nRules:\n- Use the Research resource.\n- Important Don't use any '**', else symbols for bold, Always use Html tags.\n- Always Use HTML tags for line breaks, bold and pointers.\n- Always bold (HTML Tags) stats, numeric values, client names, company name, pointers, hook and other you think its relivant.\n- Don't make it feel like a paragraph make its fomo, interesting show our stats like make it engaging and personalized.\n- Use stats pointer in email body\n- Always make Unique content for email and use pointers and stats.\n- Be highly personalized to the recipient’s role and business challenges.\n- Create urgency and FOMO (Fear of Missing Out).\n- Use a short, conversational tone — not too formal, not too pushy.\n- Mention or reference a case study, result, or social proof relevant to the main offer in the first email.\n- Follow this exact structure:\n\n1. Personalized Hook (1 liner):\n\nStart with a line directly mentioning only first name {{ $('HTTP Request5').item.json.person.first_name }} or {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }}.\n\nAcknowledge their brand or ongoing marketing effort — then hint at a pain point or growth gap.\n\nMake it an engaging question or observation — short, 1–2 lines max.\n\nExample: “ {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }} has amazing engagement — but have you noticed how few browsers actually convert?”\n\n2. Problem Connection (1–2 lines):\n\nBuild on the first email context — show that you understand the outcome-based challenge (like conversion drop, cart abandonment, low engagement, etc.).\n\nKeep it relatable and relevant to Maxicus Live Video Commerce use cases.\n\nExample: “We’ve seen even strong brands lose up to 60% of potential buyers at the final click due to lack of real-time interaction.”\n\n3. Solution + Case Study / Social Proof (3–4 short points):\n\nPresent how our Live Video Commerce solution helped solve exactly that issue.\n\nInclude specific clients and results — relatable to their industry.\n\nUse strong, data-backed outcomes (+X% conversions, +Y% AOV, etc.).\n\nEach pointer should be 1 short, punchy line.\n\nExample:\n\nHelped Lenskart increase engagement by 48% in 30 days.\n\nEnabled Tanishq to convert 3x more live viewers into buyers.\n\nBoosted Boat’s AOV by +25% using interactive video sessions.\n\nBrands like Reliance Digital & Titan already scaling with us.\n\n4. FOMO + Urgency Angle (1–2 lines):\n\nCreate pressure without sounding pushy.\n\nFrame it like an opportunity window closing soon.\n\nExample:\n\n“Brands in your space are already using this to drive festive season sales — don’t miss the early mover edge.”\n\n“We’re onboarding a limited number of new partners this quarter — might be the perfect time for {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }} to explore.”\n\n5. Call to Action (1 line):\n\nKeep it low-friction, time-sensitive.\n\nExample:\n\n“Worth a quick 15-min chat this week to explore how it could work for {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }}?”\n\n6. Signature:\nThanks & Regards,  \nAyesha  \nMaxicus Team\n\nTone Guidelines:\n- Keep it short (under 100 words).\n- Conversational, confident, and direct.\n- Avoid jargon, focus on ROI and missed opportunity if they don’t act.\n- Always use {{ $('HTTP Request5').item.json.person.first_name }}, {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }} for personalization.\n\nOutput format:\n{\n    \"type\": \"email\",\n    \"delay\": 1,\n    \"subject\": \"hook subject with firstname\",\n    \"message\": \"xyz body content\"\n}\n\n\n",
+              "role": "assistant"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        448,
+        128
+      ],
+      "id": "f6e525cc-f6c4-4340-b9b9-fe1791b7b1f0",
+      "name": "Email Draft3",
+      "credentials": {
+        "openAiApi": {
+          "id": "qptoleCYTIfnqjza",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "modelId": {
+          "__rl": true,
+          "value": "gpt-4o-mini",
+          "mode": "list",
+          "cachedResultName": "GPT-4O-MINI"
+        },
+        "messages": {
+          "values": [
+            {
+              "content": "=Role:\nYou are an expert B2B SaaS and D2C email copywriter.\n\nTask:\nYour task is to write Follow-Up Outreach Email 2 for decision-makers such as Marketing Managers, CMOs, E-commerce Heads, or Founders.\nThis follow-up should build stronger FOMO, urgency, and credibility using case studies and data from our clients.\n\nMain Email:\n{{ $('Email Draft2').item.json.message.content }}\n\nFollow Up 1:\n{{ $json.message.content }}\n\nResources:\n{{ $('Maxicus Solutions2').item.json.message.content }}\n{{ $('Company Research2').item.json.message.content }}\n{{ $('Person Research2').item.json.message.content }}\n\n\nClients List:\nSmartphones – Vivo\nJuicer Mixer Grinders & Smart Locks – Atomberg\nLaptops/Gaming PC – Lenovo\nKitchen Appliances | Water Purifier | Mixer Grinder – Borosil, Atomberg, Hafele, Native by Urban Company\nSmart Locks & Home Solutions – Hafele, Native Urban Company\nSmart Cooking Appliances – Upliance.ai\n\nRules:\n\nUse the research resource from {{ $json.message.content }}.\n\nOnly use HTML tags (<b>, <p>, <br>, <i>, <u>) in the final email output for bold, line breaks, and emphasis.\n\nDo not use ** or any markdown symbols.\n\nBold key details like stats, numeric values, client names, company name, hook, and other relevant words.\n\nKeep the email short (under 100 words).\n\nMake it conversational, confident, and ROI-focused — not salesy or robotic.\n\nBe highly personalized using only first name  {{ $('HTTP Request5').item.json.person.first_name }} and {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }}.\n\nCreate urgency and FOMO — focus on limited slots, upcoming seasonal rush, or competitors already acting.\n\nInclude short pointers and stats (3–4 lines).\n\nReference real clients from the list and show measurable results.\n\nSubject and hook must be more powerful than Follow-Up 1.\n\nEmail Structure:\n\nPersonalized Hook (1 liner):\n\nMention {{ $('HTTP Request5').item.json.person.first_name }} or {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }} directly.\n\nMake it a sharp, engaging question or observation around a pain point.\n\nHint at urgency or missed opportunity.\n\nProblem Connection (1–2 lines):\n\nConnect to a tangible challenge — like conversion drop, engagement gap, or abandoned carts.\n\nMake it outcome-driven and relatable to Maxicus Live Video Commerce.\n\nSolution + Case Study / Social Proof (3–4 short points):\n\nShow how our Live Video Commerce solution solves that issue.\n\nMention specific clients and measurable results.\n\nEach pointer should be short, 1 line each.\n\nExample:\n\nVivo — +42% conversions in 30 days via live demos.\n\nLenovo — +18% AOV increase during promo events.\n\nAtomberg — reduced cart drops by 35% through interactive video sessions.\n\nFOMO + Urgency (1–2 lines):\n\nCreate strong urgency and scarcity.\n\nUse lines like “Competitors are already adopting this,” or “We’re onboarding limited brands this quarter.”\n\nCall to Action (1 line):\n\nKeep it light but time-sensitive.\n\nExample: “Worth a quick 15-min chat this week to see if {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }} could leverage this too?”\n\nSignature:\nThanks & Regards,\nAyesha\nMaxicus Team\n\nTone Guidelines:\n\nKeep it concise, direct, and professional yet approachable.\n\nAvoid jargon — focus on outcomes and missed opportunities.\n\nMake every line purposeful — create curiosity and urgency.\n\nAlways use {{ $('HTTP Request5').item.json.person.first_name }} and {{ $('HTTP Request5').item.json.person.employment_history[0].organization_name }} for personalization.\n\nOutput Format:\n{\n    \"type\": \"email\",\n    \"delay\": 2,\n    \"subject\": \"powerful FOMO subject line use firstname\",\n    \"message\": \"email body written using only HTML tags for formatting\"\n}",
+              "role": "assistant"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        480,
+        368
+      ],
+      "id": "d1cad691-19ab-45e8-b3d4-821e640dcb1b",
+      "name": "Email Draft4",
+      "credentials": {
+        "openAiApi": {
+          "id": "qptoleCYTIfnqjza",
+          "name": "n8n free OpenAI API credits"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.lemlist.com/api/sequences/{{ $('HTTP Request14').item.json.sequenceId }}/steps",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "lemlistApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Email Draft3').item.json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1216,
+        224
+      ],
+      "id": "42cfd6bf-b2db-4baa-a33c-74416727775c",
+      "name": "HTTP Request17",
+      "credentials": {
+        "lemlistApi": {
+          "id": "OyHatKlhdBij4eb9",
+          "name": "Lemlist account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.lemlist.com/api/sequences/{{ $('HTTP Request14').item.json.sequenceId }}/steps",
+        "authentication": "predefinedCredentialType",
+        "nodeCredentialType": "lemlistApi",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={{ $('Email Draft4').item.json.message.content }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        1408,
+        224
+      ],
+      "id": "36c2579b-c6cb-4423-9bc9-605434259892",
+      "name": "HTTP Request19",
+      "credentials": {
+        "lemlistApi": {
+          "id": "OyHatKlhdBij4eb9",
+          "name": "Lemlist account"
+        }
+      }
+    }
+  ],
+  "pinData": {},
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request5",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "OpenAI Chat Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "ABM BRAIN",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ABM": {
+      "ai_tool": [
+        [
+          {
+            "node": "ABM BRAIN",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "ABM BRAIN": {
+      "main": [
+        [
+          {
+            "node": "Respond to Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Simple Memory": {
+      "ai_memory": [
+        [
+          {
+            "node": "ABM BRAIN",
+            "type": "ai_memory",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook": {
+      "main": [
+        [
+          {
+            "node": "ABM BRAIN",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request5": {
+      "main": [
+        [
+          {
+            "node": "Append or update row in sheet2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request14": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request15",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Create a lead2": {
+      "main": [
+        [
+          {
+            "node": "Edit Fields2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Draft2": {
+      "main": [
+        [
+          {
+            "node": "Email Draft3",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Maxicus Solutions2": {
+      "main": [
+        [
+          {
+            "node": "Email Draft2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Company Research2": {
+      "main": [
+        [
+          {
+            "node": "Maxicus Solutions2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Person Research2": {
+      "main": [
+        [
+          {
+            "node": "Company Research2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request15": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request17",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Append or update row in sheet2": {
+      "main": [
+        [
+          {
+            "node": "Person Research2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Draft3": {
+      "main": [
+        [
+          {
+            "node": "Email Draft4",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Email Draft4": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request14",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request17": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request19",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "HTTP Request19": {
+      "main": [
+        [
+          {
+            "node": "Create a lead2",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "506897f2-43f1-4c5b-a58c-5c3296d38b02",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "cc1ae54e5ca82fca6f6dd609ffba3caaee8618ccc6ebfc6dbbbdac7b57f95f6f"
+  },
+  "id": "Ujvh83qP9i7Cttcb",
+  "tags": []
+}
